@@ -20,8 +20,8 @@
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/Zlkcyber/LedgeBot.git
-    cd LedgeBot
+    git clone https://github.com/airdropbomb/layeredge.git
+    cd layeredge
     ```
 
 2. Install the required dependencies:
@@ -37,7 +37,11 @@
     ```sh
     npm run autoref
     ```
-4. Run the script:
+5. Add you registered wallet
+    ```sh
+    nano wallets.json
+    ```
+6. Run the script:
     ```sh
     npm run start
     ```
