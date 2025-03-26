@@ -6,22 +6,23 @@ import LayerEdge from "./utils/socket.js";
 import readline from "readline";
 import chalk from "chalk";
 import { config } from "./config.js";
-// Function to read wallets
+
+// ဝေါလတ်တွေကို ဖတ်တဲ့ ဖန်ရှင်
 async function readWallets() {
   try {
     await fs.access("wallets.json");
-
     const data = await fs.readFile("wallets.json", "utf-8");
     return JSON.parse(data);
   } catch (err) {
     if (err.code === "ENOENT") {
-      log.info("No wallets found in wallets.json");
+      log.info("wallets.json ထဲမှာ ဝေါလတ်မရှိဘူး");
       return [];
     }
     throw err;
   }
 }
 
+// မေးခွန်းမေးတဲ့ ဖန်ရှင်
 async function askQuestion(question) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -36,6 +37,7 @@ async function askQuestion(question) {
   });
 }
 
+// ပင်မလုပ်ဆောင်မှု
 async function run() {
   log.info(chalk.yellow(banner));
   await delay(3);
@@ -45,20 +47,20 @@ async function run() {
   const localStorage = await readJson("localStorage.json");
   const tasks = await readJson("tasks.json", []);
 
-  let useProxy = await askQuestion("Use Proxy or Not (y/n): ");
+  let useProxy = await askQuestion("Proxy သုံးမလား မသုံးဘူးလား (y/n): ");
   useProxy = useProxy.toLowerCase() === "y";
   if (useProxy && proxies.length < wallets.length) {
-    log.error(`Proxy and Wallets not equal | Proxy: ${proxies.length} - Wallets: ${wallets.length}`);
+    log.error(`Proxy နဲ့ ဝေါလတ်အရေအတွက် မညီဘူး | Proxy: ${proxies.length} - Wallets: ${wallets.length}`);
     return;
   }
 
-  if (proxies.length === 0) log.warn("No proxies found in proxy.txt - running without proxies");
+  if (proxies.length === 0) log.warn("proxy.txt ထဲမှာ proxy မရှိဘူး - proxy မသုံးပဲ လုပ်မယ်");
   if (wallets.length === 0) {
-    log.info('No Wallets found, creating new Wallets first "npm run autoref"');
+    log.info('ဝေါလတ်မရှိဘူး၊ အရင် ဝေါလတ်အသစ်လုပ်ပါ "npm run autoref"');
     return;
   }
 
-  log.info("Starting run Program with all Wallets:", wallets.length);
+  log.info("ဝေါလတ်အားလုံးနဲ့ ပရိုဂရမ်စတင်မယ်:", wallets.length);
 
   while (true) {
     for (let i = 0; i < wallets.length; i++) {
@@ -68,34 +70,25 @@ async function run() {
       try {
         const socket = new LayerEdge(proxy, privateKey, config.ref_code, localStorage, tasks);
         if (useProxy) {
-          log.info(`Processing Wallet Address: ${address} checking proxy...`);
+          log.info(`ဝေါလတ် ${address} အတွက် proxy စစ်မယ်...`);
           const proxyip = await socket.checkProxy();
           if (!proxyip) return;
         }
 
-        log.info(`Checking Node Status for: ${address}`);
-        const isRunning = await socket.checkNodeStatus();
-        if (isRunning) {
-          log.info(`Wallet ${address} is running - trying to claim node points...`);
-          await socket.stopNode();
-        }
+        log.info(`ဝေါလတ် ${address} အတွက် နို့ဒ်ပွိုင့်တွေ ကလိမ်းလုပ်မယ်`);
+        await socket.checkNodePoints(); // daily claim လုပ်တဲ့ အပိုင်း
 
-        log.info(`Trying to reconnect node for Wallet: ${address}`);
-        await socket.connectNode();
-
-        log.info(`Checking Node Points for Wallet: ${address}`);
-        await socket.checkNodePoints();
         if (config.auto_task) {
+          log.info(`ဝေါလတ် ${address} အတွက် တက်စ်တွေ စစ်မယ်`);
           await socket.handleSubmitProof();
-          log.info(`Checking tasks for Wallet: ${address}`);
           await socket.handleTasks();
         }
       } catch (error) {
-        log.error(`Error Processing wallet:`, error.message);
+        log.error(`ဝေါလတ်ကို လုပ်ဆောင်မှု မအောင်မြင်ဘူး:`, error.message);
       }
     }
-    log.warn(`All Wallets have been processed, waiting 20 hours before next run...`);
-    await delay(20 * 60 * 60);
+    log.warn(`ဝေါလတ်အားလုံး ပြီးသွားပြီ၊ ၂၀ နာရီစောင့်ပြီး နောက်တစ်ခေါက်လုပ်မယ်...`);
+    await delay(20 * 60 * 60); // ၂၀ နာရီ စောင့်မယ်
   }
 }
 
